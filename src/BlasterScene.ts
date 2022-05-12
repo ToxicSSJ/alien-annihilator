@@ -20,6 +20,11 @@ export default class BlasterScene extends THREE.Scene
 
 	private bullets: Bullet[] = []
 	private targets: THREE.Group[] = []
+	private enemies: THREE.Mesh[] = []
+
+	private raycaster = new THREE.Raycaster()
+	private lag = 0.02
+	private directions: THREE.Vector3[] = []
 
 	constructor(camera: THREE.PerspectiveCamera)
 	{
@@ -36,6 +41,14 @@ export default class BlasterScene extends THREE.Scene
 
 		this.bulletMtl = await this.mtlLoader.loadAsync('assets/foamBulletB.mtl')
 		this.bulletMtl.preload()
+
+		// create raycaster for path finding
+		const search = [] // directions
+
+		for (let i = 0; i < 360; i+=3) {
+			search[i] = new THREE.Vector3(Math.cos(i) , 0 , Math.sin(i))
+		}
+		this.directions = search;
 
 		// create the 4 targets
 		const t1 = await this.createTarget(targetMtl)
@@ -54,8 +67,14 @@ export default class BlasterScene extends THREE.Scene
 		t4.position.x = -2
 		t4.position.z = -3
 
-		this.add(t1, t2, t3, t4)
+		//modification
+		const enemyCube = this.createCube()
+		enemyCube.position.set(0,0,-3)
+		//end of modification
+
+		this.add(t1, t2, t3, t4, enemyCube)
 		this.targets.push(t1, t2, t3, t4)
+		this.enemies.push(enemyCube)
 
 		this.blaster = await this.createBlaster()
 		this.add(this.blaster)
@@ -86,6 +105,15 @@ export default class BlasterScene extends THREE.Scene
 		{
 			this.createBullet()
 		}
+	}
+
+	private updateEnemy(){
+		this.animate()
+	}
+
+	private animate(){
+		this.checkForTarget();
+		requestAnimationFrame(this.animate);
 	}
 
 	private updateInput()
@@ -156,6 +184,30 @@ export default class BlasterScene extends THREE.Scene
 
 		return modelRoot
 	}
+
+	//modification
+	private createCube()
+	{
+		return new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshPhongMaterial({ color: 0x333333 }))
+	}
+
+	public checkForTarget(){
+		
+		this.directions.forEach((direction) => {
+			//raycaster.set(ene)
+			this.raycaster.set(this.enemies[0].position, direction);
+			this.raycaster.near = 0
+			this.raycaster.far = 50
+			
+			const intersects = this.raycaster.intersectObjects(this.children, false);
+		
+			if(intersects[0].object.name){
+				this.enemies[0].position.x += (direction.x * this.lag);
+				this.enemies[0].position.z += (direction.z * this.lag);
+			}
+		});
+	}
+	//end of modification
 
 	private async createBlaster()
 	{
@@ -254,5 +306,6 @@ export default class BlasterScene extends THREE.Scene
 		// update
 		this.updateInput()
 		this.updateBullets()
+		// this.updateEnemy()
 	}
 }
