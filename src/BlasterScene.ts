@@ -26,6 +26,8 @@ export default class BlasterScene extends THREE.Scene
 	private lag = 0.02
 	private directions: THREE.Vector3[] = []
 
+	private initialized: boolean = false;
+
 	constructor(camera: THREE.PerspectiveCamera)
 	{
 		super()
@@ -35,6 +37,8 @@ export default class BlasterScene extends THREE.Scene
 
 	async initialize()
 	{
+		console.log("Executing intialize...")
+
 		// load a shared MTL (Material Template Library) for the targets
 		const targetMtl = await this.mtlLoader.loadAsync('assets/targetA.mtl')
 		targetMtl.preload()
@@ -48,6 +52,7 @@ export default class BlasterScene extends THREE.Scene
 		for (let i = 0; i < 360; i+=3) {
 			search[i] = new THREE.Vector3(Math.cos(i) , 0 , Math.sin(i))
 		}
+
 		this.directions = search;
 
 		// create the 4 targets
@@ -76,6 +81,8 @@ export default class BlasterScene extends THREE.Scene
 		this.targets.push(t1, t2, t3, t4)
 		this.enemies.push(enemyCube)
 
+		console.log("Enemies array: " + this.enemies)
+
 		this.blaster = await this.createBlaster()
 		this.add(this.blaster)
 
@@ -92,6 +99,9 @@ export default class BlasterScene extends THREE.Scene
 
 		document.addEventListener('keydown', this.handleKeyDown)
 		document.addEventListener('keyup', this.handleKeyUp)
+
+		this.initialized = true;
+
 	}
 
 	private handleKeyDown = (event: KeyboardEvent) => {
@@ -107,13 +117,15 @@ export default class BlasterScene extends THREE.Scene
 		}
 	}
 
-	private updateEnemy(){
-		this.animate()
-	}
-
 	private animate(){
+		if(this == undefined) // ?? por que mrdas es undefined
+			return;
 		this.checkForTarget();
 		requestAnimationFrame(this.animate);
+	}
+
+	private updateEnemy(){
+		this.animate()
 	}
 
 	private updateInput()
@@ -192,20 +204,31 @@ export default class BlasterScene extends THREE.Scene
 	}
 
 	public checkForTarget(){
-		
+
 		this.directions.forEach((direction) => {
+
 			//raycaster.set(ene)
 			this.raycaster.set(this.enemies[0].position, direction);
 			this.raycaster.near = 0
-			this.raycaster.far = 50
+			this.raycaster.far = 1000
 			
-			const intersects = this.raycaster.intersectObjects(this.children, false);
+			const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
+
+			if(intersects.length == 0)
+				return;
+
+			console.log("Enemies: " + this.enemies)
+			console.log("Intersects: " + intersects)
 		
-			if(intersects[0].object.name){
+			if(intersects[0].object.name) {
+
 				this.enemies[0].position.x += (direction.x * this.lag);
 				this.enemies[0].position.z += (direction.z * this.lag);
+
 			}
+
 		});
+		
 	}
 	//end of modification
 
@@ -303,9 +326,15 @@ export default class BlasterScene extends THREE.Scene
 
 	update()
 	{
+
+		if(!this.initialized)
+			return;
+
 		// update
 		this.updateInput()
 		this.updateBullets()
-		// this.updateEnemy()
+		console.log("Updating enemy...")
+		this.updateEnemy()
+
 	}
 }
