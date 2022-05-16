@@ -75,7 +75,16 @@ export default class BlasterScene extends THREE.Scene
 		);
 
 		gltf.scene.scale.set(1,1,1) // scale here
-		this.add( gltf.scene );
+		//this.add( gltf.scene );
+
+		// Floor
+		var geometry = new THREE.PlaneGeometry(1000, 1000);
+		var material = new THREE.MeshBasicMaterial({color: 0x0000ff});
+		var floor = new THREE.Mesh(geometry, material);
+		floor.material.side = THREE.DoubleSide;
+		floor.rotation.x = 90;
+		floor.rotation.z = 180;
+		//this.add(floor);
 
 		gltf.animations; // Array<THREE.AnimationClip>
 		gltf.scene; // THREE.Group
