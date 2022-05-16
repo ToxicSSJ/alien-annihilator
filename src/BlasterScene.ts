@@ -2,12 +2,20 @@ import * as THREE from 'three'
 
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+
 import Bullet from './Bullet'
 
 export default class BlasterScene extends THREE.Scene
 {
+
 	private readonly mtlLoader = new MTLLoader()
 	private readonly objLoader = new OBJLoader()
+	private readonly gltfLoader = new GLTFLoader();
+
+	private readonly dracoLoader = new DRACOLoader();
+	
 
 	private readonly camera: THREE.PerspectiveCamera
 
@@ -20,16 +28,62 @@ export default class BlasterScene extends THREE.Scene
 
 	private bullets: Bullet[] = []
 	private targets: THREE.Group[] = []
+	private scene: THREE.Scene;
 
 	constructor(camera: THREE.PerspectiveCamera)
 	{
 		super()
 
+		this.dracoLoader.setDecoderPath('/examples/js/libs/draco/');
+		this.gltfLoader.setDRACOLoader(this.dracoLoader);
+
+		this.scene = this;
 		this.camera = camera
+
 	}
 
 	async initialize()
 	{
+		// background
+		let materialArray = []
+
+		let texture_ft = new THREE.TextureLoader().load('assets/background/corona_ft.png');
+		let texture_bk = new THREE.TextureLoader().load('assets/background/corona_bk.png');
+		let texture_up = new THREE.TextureLoader().load('assets/background/corona_up.png');
+		let texture_dn = new THREE.TextureLoader().load('assets/background/corona_dn.png');
+		let texture_rt = new THREE.TextureLoader().load('assets/background/corona_rt.png');
+		let texture_lf = new THREE.TextureLoader().load('assets/background/corona_lf.png');
+
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_ft }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_bk }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_up }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_dn }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_rt }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_lf }))
+
+		for(let i = 0; i < 6; i++)
+			materialArray[i].side = THREE.BackSide;
+
+		let skyboxGeo = new THREE.BoxGeometry(50, 50, 50)
+		let skybox = new THREE.Mesh(skyboxGeo, materialArray)
+		this.add(skybox)
+
+		// Load a glTF resource
+		let gltf = await this.gltfLoader.loadAsync(
+			// resource URL
+			'assets/maps/design.gltf'
+		);
+
+		gltf.scene.scale.set(1,1,1) // scale here
+		this.add( gltf.scene );
+
+		gltf.animations; // Array<THREE.AnimationClip>
+		gltf.scene; // THREE.Group
+		gltf.scenes; // Array<THREE.Group>
+		gltf.cameras; // Array<THREE.Camera>
+		gltf.asset; // Object
+
+
 		// load a shared MTL (Material Template Library) for the targets
 		const targetMtl = await this.mtlLoader.loadAsync('assets/targetA.mtl')
 		targetMtl.preload()
@@ -73,6 +127,7 @@ export default class BlasterScene extends THREE.Scene
 
 		document.addEventListener('keydown', this.handleKeyDown)
 		document.addEventListener('keyup', this.handleKeyUp)
+
 	}
 
 	private handleKeyDown = (event: KeyboardEvent) => {
