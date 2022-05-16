@@ -23,7 +23,7 @@ export default class BlasterScene extends THREE.Scene
 	private enemies: THREE.Mesh[] = []
 
 	private raycaster = new THREE.Raycaster()
-	private lag = 0.02
+	private lag = 0.009
 	private directions: THREE.Vector3[] = []
 
 	private initialized: boolean = false;
@@ -118,10 +118,10 @@ export default class BlasterScene extends THREE.Scene
 	}
 
 	private animate(){
-		if(this == undefined) // ?? por que mrdas es undefined
-			return;
+		//if(this == undefined) // ?? por que mrdas es undefined
+		//	return;
 		this.checkForTarget();
-		requestAnimationFrame(this.animate);
+		requestAnimationFrame(() => this.animate);
 	}
 
 	private updateEnemy(){
@@ -210,21 +210,23 @@ export default class BlasterScene extends THREE.Scene
 			//raycaster.set(ene)
 			this.raycaster.set(this.enemies[0].position, direction);
 			this.raycaster.near = 0
-			this.raycaster.far = 1000
+			this.raycaster.far = 10000
 			
-			const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
+			if (this.blaster){
+				const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
+				
+				if(intersects.length == 0)
+					return;
 
-			if(intersects.length == 0)
-				return;
+				console.log("Enemies: " + this.enemies)
+				console.log("Intersects: " + intersects)
+			
+				if(intersects[0].object.name) {
 
-			console.log("Enemies: " + this.enemies)
-			console.log("Intersects: " + intersects)
-		
-			if(intersects[0].object.name) {
+					this.enemies[0].position.x += (direction.x * this.lag);
+					this.enemies[0].position.z += (direction.z * this.lag);
 
-				this.enemies[0].position.x += (direction.x * this.lag);
-				this.enemies[0].position.z += (direction.z * this.lag);
-
+				}
 			}
 
 		});

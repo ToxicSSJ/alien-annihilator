@@ -1,10 +1,9 @@
 export default class Enemy
 {
 
-    // private health : number
-    // private weapon : Weapon
+    private health : number = 100
 
-    // constructor(weapon) {
-        
-    // }
+    constructor() {
+
+    }
 }
