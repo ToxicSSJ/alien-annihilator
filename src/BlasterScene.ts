@@ -4,8 +4,10 @@ import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { GUI } from 'dat.gui'
 
 import Bullet from './Bullet'
+import Tile from './Tile'
 
 export default class BlasterScene extends THREE.Scene
 {
@@ -30,6 +32,16 @@ export default class BlasterScene extends THREE.Scene
 	private targets: THREE.Group[] = []
 	private scene: THREE.Scene;
 
+	private floors: Array<Tile> = [
+		new Tile(0, 0),
+		new Tile(0, 20)
+	]
+
+	private walls: Array<Tile> = [
+		new Tile(0, 0),
+		new Tile(0, 20)
+	]
+
 	constructor(camera: THREE.PerspectiveCamera)
 	{
 		super()
@@ -44,6 +56,23 @@ export default class BlasterScene extends THREE.Scene
 
 	async initialize()
 	{
+
+		// sprite
+		const map = new THREE.TextureLoader().load( 'sprite.png' );
+		const material2 = new THREE.SpriteMaterial( { map: map } );
+
+		const sprite = new THREE.Sprite( material2 );
+		this.camera.position.z = 2;
+		this.camera.add(sprite);
+
+		// wall
+		this.map()
+		
+		// let btn = document.createElement("button");
+		// btn.innerHTML = "Click Me";
+		// btn.style.cssText = 'position:absolute;top:2%;left:2%;width:200px;height:200px;';
+		//document.body.appendChild(btn);
+
 		// background
 		let materialArray = []
 
@@ -54,17 +83,19 @@ export default class BlasterScene extends THREE.Scene
 		let texture_rt = new THREE.TextureLoader().load('assets/background/corona_rt.png');
 		let texture_lf = new THREE.TextureLoader().load('assets/background/corona_lf.png');
 
-		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_ft }))
-		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_bk }))
-		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_up }))
-		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_dn }))
-		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_rt }))
-		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_lf }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_ft, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_bk, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_up, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_dn, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_rt, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_lf, side: THREE.BackSide, fog: false }))
 
-		for(let i = 0; i < 6; i++)
+		for(let i = 0; i < 6; i++) {
 			materialArray[i].side = THREE.BackSide;
+			materialArray[i].fog = false;
+		}
 
-		let skyboxGeo = new THREE.BoxGeometry(50, 50, 50)
+		let skyboxGeo = new THREE.BoxGeometry(1000, 1000, 1000)
 		let skybox = new THREE.Mesh(skyboxGeo, materialArray)
 		this.add(skybox)
 
@@ -76,15 +107,6 @@ export default class BlasterScene extends THREE.Scene
 
 		gltf.scene.scale.set(1,1,1) // scale here
 		//this.add( gltf.scene );
-
-		// Floor
-		var geometry = new THREE.PlaneGeometry(1000, 1000);
-		var material = new THREE.MeshBasicMaterial({color: 0x0000ff});
-		var floor = new THREE.Mesh(geometry, material);
-		floor.material.side = THREE.DoubleSide;
-		floor.rotation.x = 90;
-		floor.rotation.z = 180;
-		//this.add(floor);
 
 		gltf.animations; // Array<THREE.AnimationClip>
 		gltf.scene; // THREE.Group
@@ -136,6 +158,65 @@ export default class BlasterScene extends THREE.Scene
 
 		document.addEventListener('keydown', this.handleKeyDown)
 		document.addEventListener('keyup', this.handleKeyUp)
+
+	}
+
+	async map() {
+
+		var floor_texture = new THREE.TextureLoader().load("public/assets/tiles/floor.jpg");
+		var wall_texture = new THREE.TextureLoader().load("public/assets/tiles/wall.jpg");
+
+		floor_texture.wrapS = THREE.RepeatWrapping;
+		floor_texture.wrapT = THREE.RepeatWrapping;
+		floor_texture.repeat.set( 4, 4 );
+
+		wall_texture.wrapS = THREE.RepeatWrapping;
+		wall_texture.wrapT = THREE.RepeatWrapping;
+		wall_texture.repeat.set( 4, 4 );
+
+		var material_floor = new THREE.MeshBasicMaterial({
+			color: 0xffffff,
+			map: floor_texture,
+		    side: THREE.DoubleSide
+		});
+
+		var material_wall = new THREE.MeshBasicMaterial({
+			color: 0xffffff,
+			map: wall_texture,
+		    side: THREE.DoubleSide
+		});
+
+		for(let i = 0; i < this.floors.length; i++) {
+
+			const floor = this.floors[i]
+
+			const geometry_in = new THREE.BoxGeometry(20, 0.1, 20);
+			const cube = new THREE.Mesh(geometry_in, material_floor);
+
+			cube.position.x = floor.getX;
+			cube.position.z = floor.getY;
+			cube.position.y = -2;
+
+			this.scene.add(cube);
+			console.log('lel')
+
+		}
+
+		for(let i = 0; i < this.walls.length; i++) {
+
+			const wall = this.walls[i]
+
+			const geometry_in = new THREE.BoxGeometry(0.1, 10, 20);
+			const cube = new THREE.Mesh(geometry_in, material_wall);
+
+			cube.position.x = wall.getX;
+			cube.position.z = wall.getY;
+			cube.position.y = 3;
+
+			this.scene.add(cube);
+			console.log('lel')
+
+		}
 
 	}
 

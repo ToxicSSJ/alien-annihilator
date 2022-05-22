@@ -1,0 +1,39 @@
+html, body {
+    margin: 0;
+    height: 100%;
+}
+
+strong {
+    color: white !important;
+}
+
+.subtitle {
+    color: white !important;
+}
+
+.title {
+    color: white !important;
+}
+
+.game-text {
+    color: white;
+}
+
+.top-left {
+
+    position: absolute;
+
+    top: 2%;
+    left: 2%;
+
+    width: 300px;
+    height: 200px;
+    color: white;
+
+}
+
+#app {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
