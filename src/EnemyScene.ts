@@ -25,7 +25,7 @@ export default class BlasterScene extends THREE.Scene
 	private enemies: THREE.Mesh[] = []
 
 	private raycaster = new THREE.Raycaster()
-	private lag = 0.2
+	private lag = 0.009
 	private directions: THREE.Vector3[] = []
 
 	private initialized: boolean = false;
