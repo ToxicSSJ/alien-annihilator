@@ -60,8 +60,6 @@ export default class Enemy extends THREE.Mesh
 
         this.add(cube);
 
-        console.log("lel" + this)
-
     } 
 
     public animate() {
