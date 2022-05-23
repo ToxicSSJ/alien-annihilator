@@ -12,6 +12,7 @@ import WallOffset from './WallOffset'
 import { Audio, Material } from 'three'
 import Door from './Door'
 import DoorEntity from './DoorEntity'
+import Winner from './Winner'
 
 export default class BlasterScene extends THREE.Scene
 {
@@ -140,6 +141,10 @@ export default class BlasterScene extends THREE.Scene
 		new Door(0, 90, 0, 15, 0),
 		new Door(0, 310, 0, 15, 0)
 	]
+	
+	private winners: Array<Winner> = [
+		new Winner(0, 520, 5)
+	]
 
 	private walls: Array<WallOffset> = [
 		new WallOffset(0, 0, 90),
@@ -165,6 +170,10 @@ export default class BlasterScene extends THREE.Scene
 	]
 
 	private game_doors: Array<DoorEntity> = []
+	private game_win: boolean = false
+
+	private game_skip: number = 0
+	private game_treeshold: number = 0.0005
 
 	constructor(camera: THREE.PerspectiveCamera)
 	{
@@ -630,6 +639,32 @@ export default class BlasterScene extends THREE.Scene
 
 	}
 
+	private updateWinners() {
+
+		if(!this.blaster || this.game_win) return
+
+		for (let i = 0; i < this.winners.length; ++i) {
+
+			const winner = this.winners[i]
+
+			const winner_pos = new THREE.Vector3(winner.getX, 0, winner.getY);
+			const player_pos = this.blaster.position.clone()
+
+			let distance = winner_pos.distanceTo(player_pos)
+			console.log(distance)
+
+			if(distance <= winner.getDistance) {
+
+				this.playSound("assets/sound/win.mp3", 0.5)
+				this.game_win = true
+				return
+
+			}
+
+		}
+
+	}
+
 	private playSound(soundName: string, volume: number) {
 		let sound = new THREE.Audio(this.soundListener)
 		const audioLoader = new THREE.AudioLoader();
@@ -654,9 +689,30 @@ export default class BlasterScene extends THREE.Scene
 
 	update()
 	{
+
+		if(this.game_win) {
+
+			if(this.game_skip++ >= this.game_treeshold) {
+
+				this.game_skip = 0
+				this.game_treeshold += this.game_treeshold
+
+				this.updateInput()
+				this.updateBullets()
+				this.updateDoors()
+				this.updateWinners()
+
+			}
+
+			return
+
+		}
+
 		// update
 		this.updateInput()
 		this.updateBullets()
 		this.updateDoors()
+		this.updateWinners()
+
 	}
 }
