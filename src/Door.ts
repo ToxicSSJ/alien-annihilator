@@ -10,29 +10,35 @@ export default class Door
 	private y: number
 
 	private distance: number
+	private rotate: number
 	private texture: number
 
-	constructor(x: number, y: number, distance: number, texture: number)
+	constructor(x: number, y: number, rotate: number, distance: number, texture: number)
 	{
 
 		this.x = x
 		this.y = y
 
 		this.distance = distance
+		this.rotate = rotate
 		this.texture = texture
 
 	}
 
 	get getX() {
-		return this.x;
+		return this.x
 	}
 
 	get getY() {
-		return this.y;
+		return this.y
 	}
 
 	get getDistance() {
-		return this.distance;
+		return this.distance
+	}
+
+	get getRotate() {
+		return this.rotate
 	}
 
 	get getTexture() {

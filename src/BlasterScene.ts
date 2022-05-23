@@ -33,6 +33,7 @@ export default class BlasterScene extends THREE.Scene
 	private bullets: Bullet[] = []
 	private targets: THREE.Group[] = []
 	private scene: THREE.Scene;
+	private speed: number = 0.5
 
 	private sound: Audio;
 	private music: Audio;
@@ -41,6 +42,7 @@ export default class BlasterScene extends THREE.Scene
 
 	private floors: Array<Tile> = [
 
+		// Start Lobby
 		new Tile(0, 0, 2, [0, 0, 0, -1], 1),
 		new Tile(0, 20, 2, [-1, -1, -1, 0], 1),
 
@@ -55,12 +57,88 @@ export default class BlasterScene extends THREE.Scene
 		new Tile(0, 80, 2, [-1, 0, 0, -1], 1),
 		new Tile(-20, 60, 2, [-1, -1, 0, 0], 1),
 
-		new Tile(0, 100, 2, [-1, -1, -1, -1], -1),
+		// Start Second Section
+		// Middle
+		new Tile(0, 100, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 120, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 140, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 160, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 180, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 200, 1, [-1, -1, -1, 1], 1),
+		new Tile(0, 240, 1, [1, -1, -1, -1], 1),
+		new Tile(0, 260, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 280, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 300, 1, [-1, 4, 4, -1], 1),
+
+		// Left
+		new Tile(20, 100, 1, [4, 4, -1, -1], 1),
+		new Tile(20, 120, 1, [-1, 4, -1, -1], 1),
+		new Tile(20, 140, 1, [-1, 4, -1, -1], 1),
+		new Tile(20, 160, 1, [-1, 4, -1, -1], 1),
+		new Tile(20, 180, 1, [-1, 4, -1, -1], 1),
+		new Tile(20, 200, 1, [-1, 4, -1, -1], 1),
+		new Tile(20, 220, 1, [-1, 4, 1, -1], 1),
+		new Tile(20, 240, 1, [-1, 4, -1, -1], 1),
+		new Tile(20, 260, 1, [-1, 4, -1, -1], 1),
+		new Tile(20, 280, 1, [-1, 4, -1, 4], 1),
+
+		// Right
+		new Tile(-20, 100, 1, [4, -1, 4, -1], 1),
+		new Tile(-20, 120, 1, [-1, -1, 4, -1], 1),
+		new Tile(-20, 140, 1, [-1, -1, 4, -1], 1),
+		new Tile(-20, 160, 1, [-1, -1, 4, -1], 1),
+		new Tile(-20, 180, 1, [-1, -1, 4, -1], 1),
+		new Tile(-20, 200, 1, [-1, -1, 4, -1], 1),
+		new Tile(-20, 220, 1, [-1, 1, 4, -1], 1),
+		new Tile(-20, 240, 1, [-1, -1, 4, -1], 1),
+		new Tile(-20, 260, 1, [-1, -1, 4, -1], 1),
+		new Tile(-20, 280, 1, [-1, -1, 4, 4], 1),
+		// End Second Section
+
+		// Start Third Section
+		// Middle
+		new Tile(0, 100 + 200, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 120 + 200, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 140 + 200, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 160 + 200, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 180 + 200, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 200 + 200, 1, [-1, -1, -1, 0], 1),
+		new Tile(0, 240 + 200, 1, [0, -1, -1, -1], 1),
+		new Tile(0, 260 + 200, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 280 + 200, 1, [-1, -1, -1, -1], 1),
+		new Tile(0, 300 + 200, 1, [-1, 3, 3, -1], 1),
+		new Tile(0, 320 + 200, 3, [-1, 3, 3, 3], 1),
+
+		// Left
+		new Tile(20, 100 + 200, 1, [3, 3, 3, 3], 1),
+		new Tile(20, 120 + 200, 1, [-1, 3, -1, -1], 1),
+		new Tile(20, 140 + 200, 1, [-1, 3, -1, -1], 1),
+		new Tile(20, 160 + 200, 1, [-1, 3, -1, -1], 1),
+		new Tile(20, 180 + 200, 1, [-1, 3, -1, -1], 1),
+		new Tile(20, 200 + 200, 1, [-1, 3, -1, -1], 1),
+		new Tile(20, 220 + 200, 1, [-1, 3, 0, -1], 1),
+		new Tile(20, 240 + 200, 1, [-1, 3, -1, -1], 1),
+		new Tile(20, 260 + 200, 1, [-1, 3, -1, -1], 1),
+		new Tile(20, 280 + 200, 1, [-1, 3, -1, 3], 1),
+
+		// Right
+		new Tile(-20, 100 + 200, 1, [3, 3, 3, 3], 1),
+		new Tile(-20, 120 + 200, 1, [-1, -1, 3, -1], 1),
+		new Tile(-20, 140 + 200, 1, [-1, -1, 3, -1], 1),
+		new Tile(-20, 160 + 200, 1, [-1, -1, 3, -1], 1),
+		new Tile(-20, 180 + 200, 1, [-1, -1, 3, -1], 1),
+		new Tile(-20, 200 + 200, 1, [-1, -1, 3, -1], 1),
+		new Tile(-20, 220 + 200, 1, [-1, 0, 3, -1], 1),
+		new Tile(-20, 240 + 200, 1, [-1, -1, 3, -1], 1),
+		new Tile(-20, 260 + 200, 1, [-1, -1, 3, -1], 1),
+		new Tile(-20, 280 + 200, 1, [-1, -1, 3, 3], 1),
+		// End Second Section
 		
 	]
 
 	private doors: Array<Door> = [
-		new Door(0, 90, 15, 0)
+		new Door(0, 90, 0, 15, 0),
+		new Door(0, 310, 0, 15, 0)
 	]
 
 	private walls: Array<WallOffset> = [
@@ -79,11 +157,11 @@ export default class BlasterScene extends THREE.Scene
 	]
 
 	private floor_textures: string[] = [
-		"floor_a", "floor_b", "floor_c"
+		"floor_a", "floor_b", "floor_c", "winner"
 	]
 
 	private wall_textures: string[] = [
-		"wall_a", "wall_b", "wall_c"
+		"wall_a", "wall_b", "wall_c", "wall_d", "wall_e"
 	]
 
 	private game_doors: Array<DoorEntity> = []
@@ -149,7 +227,7 @@ export default class BlasterScene extends THREE.Scene
 			materialArray[i].fog = false;
 		}
 
-		let skyboxGeo = new THREE.BoxGeometry(1000, 1000, 1000)
+		let skyboxGeo = new THREE.BoxGeometry(3000, 3000, 3000)
 		let skybox = new THREE.Mesh(skyboxGeo, materialArray)
 		this.add(skybox)
 
@@ -282,7 +360,7 @@ export default class BlasterScene extends THREE.Scene
 		for(let i = 0; i < this.doors.length; i++) {
 
 			const door = this.doors[i]
-			let offset = this.walls[i]
+			let offset = this.walls[door.getRotate]
 
 			const geometry_in = new THREE.BoxGeometry(0.1, 10, 20);
 			const door_cube = new THREE.Mesh(geometry_in, this.textures.get(this.door_textures[door.getTexture]));
@@ -370,15 +448,13 @@ export default class BlasterScene extends THREE.Scene
 
 		this.camera.getWorldDirection(dir)
 
-		const speed = 0.1
-
 		if (this.keyDown.has('w') || this.keyDown.has('arrowup'))
 		{
-			this.blaster.position.add(dir.clone().multiplyScalar(speed))
+			this.blaster.position.add(dir.clone().multiplyScalar(this.speed))
 		}
 		else if (this.keyDown.has('s') || this.keyDown.has('arrowdown'))
 		{
-			this.blaster.position.add(dir.clone().multiplyScalar(-speed))
+			this.blaster.position.add(dir.clone().multiplyScalar(-this.speed))
 		}
 
 		if (shiftKey)
@@ -390,14 +466,14 @@ export default class BlasterScene extends THREE.Scene
 			{
 				this.blaster.position.add(
 					strafeDir.applyAxisAngle(upVector, Math.PI * 0.5)
-						.multiplyScalar(speed)
+						.multiplyScalar(this.speed)
 				)
 			}
 			else if (this.keyDown.has('d') || this.keyDown.has('arrowright'))
 			{
 				this.blaster.position.add(
 					strafeDir.applyAxisAngle(upVector, Math.PI * -0.5)
-						.multiplyScalar(speed)
+						.multiplyScalar(this.speed)
 				)
 			}
 		}
@@ -470,7 +546,7 @@ export default class BlasterScene extends THREE.Scene
 		)
 
 		this.bullets.push(b)
-		this.playSound("assets/sound/shoot.mp3", this.sound, 0.05)
+		this.playSound("assets/sound/shoot.mp3", 0.05)
 
 	}
 
@@ -545,7 +621,7 @@ export default class BlasterScene extends THREE.Scene
 			if(distance <= entity.getDoor.getDistance) {
 
 				entity.setActivated(true)
-				this.playSound("assets/sound/door.mp3", this.sound, 0.5)
+				this.playSound("assets/sound/door.mp3", 0.5)
 				continue
 
 			}
@@ -554,7 +630,7 @@ export default class BlasterScene extends THREE.Scene
 
 	}
 
-	private playSound(soundName: string, player: Audio, volume: number) {
+	private playSound(soundName: string, volume: number) {
 		let sound = new THREE.Audio(this.soundListener)
 		const audioLoader = new THREE.AudioLoader();
 		audioLoader.load(soundName, function( buffer ) {
