@@ -20,11 +20,48 @@ strong {
 }
 
 .game-hud {
+    
     padding-left: 5% !important;
     padding-top: 5% !important;
     padding-bottom: 5% !important;
     padding-right: 5% !important;
+    
     background-color: rgba(1, 1, 1, .5);
+
+}
+
+.game_ad {
+
+    background-color: rgba(1, 1, 1, .5);
+    position: absolute;
+
+    height: 100%;
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
+.game_display_win {
+
+    color: lime;
+    font-family: "Lucida Console", "Courier New", monospace;
+    font-size: 50px;
+
+    position: relative;
+
+}
+
+.game_display_lose {
+
+    color: red;
+    font-family: "Lucida Console", "Courier New", monospace;
+    font-size: 50px;
+
+    position: relative;
+
 }
 
 .top-left {

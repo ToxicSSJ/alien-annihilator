@@ -8,14 +8,28 @@
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
   </head>
   <body>
-	<section class="section top-left">
-		<div class="container game-hud">
-		  <strong>Score: </strong><br /><p>5</p>
-		  <strong>Munition: </strong><br />
-		  <strong>Health: </strong><br />
-		  <strong>FPS: </strong>
+	<div id="game_hud">
+		<section class="section top-left">
+			<div class="container game-hud">
+				<strong>Score: <div id="score">0</div></strong><br />
+				<strong>Munition: <div id="ammo">0</div></strong><br />
+				<strong>Health: <div id="health">0</div></strong><br />
+				<strong>FPS: <div id="fps">0</div></strong>
+			</div>
+		</section>
+	</div>
+	<div id="winner1" class = "game_ad" style="visibility: hidden">
+		<div id="winner2" class = "game_display_win">
+			<center><h1>YOU WIN</h1></center>
+			<button class="button is-link is-rounded" onClick="window.location.reload();">Play Again</button> <button class="button is-active is-rounded">Github</button>
 		</div>
-	</section>
+	</div>
+	<div  id="looser1" class = "game_ad" style="visibility: hidden">
+		<div id="looser2" class = "game_display_lose">
+			<center><h1>YOU LOSE</h1></center>
+			<button class="button is-link is-rounded" onClick="window.location.reload();">Play Again</button> <button class="button is-active is-rounded">Github</button>
+		</div>	
+	</div>
     <canvas id="app"></canvas>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -175,6 +175,10 @@ export default class BlasterScene extends THREE.Scene
 	private game_skip: number = 0
 	private game_treeshold: number = 0.0005
 
+	private game_health: number = 100
+	private game_ammo: number = 30
+	private game_score: number = 0
+
 	constructor(camera: THREE.PerspectiveCamera)
 	{
 		super()
@@ -513,14 +517,21 @@ export default class BlasterScene extends THREE.Scene
 
 	private async createBullet()
 	{
-		if (!this.blaster)
-		{
+
+		if (!this.blaster) {
 			return
 		}
 
-		if (this.bulletMtl)
-		{
+		if (this.bulletMtl) {
 			this.objLoader.setMaterials(this.bulletMtl)
+		}
+
+		if(this.game_ammo <= 0) {
+
+			this.playSound("assets/sound/reload2.mp3", 1)
+			this.game_ammo = 30
+			return
+
 		}
 
 		const bulletModel = await this.objLoader.loadAsync('assets/foamBulletB.obj')
@@ -555,6 +566,7 @@ export default class BlasterScene extends THREE.Scene
 		)
 
 		this.bullets.push(b)
+		this.game_ammo--
 		this.playSound("assets/sound/shoot.mp3", 0.05)
 
 	}
@@ -651,17 +663,25 @@ export default class BlasterScene extends THREE.Scene
 			const player_pos = this.blaster.position.clone()
 
 			let distance = winner_pos.distanceTo(player_pos)
-			console.log(distance)
 
 			if(distance <= winner.getDistance) {
 
 				this.playSound("assets/sound/win.mp3", 0.5)
 				this.game_win = true
+				this.winner()
 				return
 
 			}
 
 		}
+
+	}
+
+	private updateHUD() {
+
+		this.health(this.game_health)
+		this.score(this.game_score)
+		this.ammo(this.game_ammo)
 
 	}
 
@@ -687,6 +707,40 @@ export default class BlasterScene extends THREE.Scene
 		});
 	}
 
+	public fps(fps: number) {
+		let element = document.getElementById('fps')
+		if(element) element.innerHTML = fps + ""
+	}
+
+	public score(score: number) {
+		let element = document.getElementById('score')
+		if(element) element.innerHTML = score + ""
+	}
+
+	public ammo(ammo: number) {
+		let element = document.getElementById('ammo')
+		if(element) element.innerHTML = ammo + ""
+	}
+
+	public health(health: number) {
+		let element = document.getElementById('health')
+		if(element) element.innerHTML = health + ""
+	}
+
+	public winner() {
+		let element = document.getElementById('winner1')
+		if(element) element.style.visibility = 'visible'
+		let element2 = document.getElementById('winner2')
+		if(element2) element2.style.visibility = 'visible'
+	}
+
+	public looser() {
+		let looser1 = document.getElementById('looser1')
+		if(looser1) looser1.style.visibility = 'visible'
+		let looser2 = document.getElementById('looser2')
+		if(looser2) looser2.style.visibility = 'visible'
+	}
+
 	update()
 	{
 
@@ -697,6 +751,7 @@ export default class BlasterScene extends THREE.Scene
 				this.game_skip = 0
 				this.game_treeshold += this.game_treeshold
 
+				this.updateHUD()
 				this.updateInput()
 				this.updateBullets()
 				this.updateDoors()
@@ -709,6 +764,7 @@ export default class BlasterScene extends THREE.Scene
 		}
 
 		// update
+		this.updateHUD()
 		this.updateInput()
 		this.updateBullets()
 		this.updateDoors()
