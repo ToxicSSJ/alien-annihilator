@@ -89,18 +89,8 @@ export default class BlasterScene extends THREE.Scene
 		// const enemyCube = this.createCube()
 		// enemyCube.position.set(0,0,-3)
 
-		const enemyCube = new Enemy(0, -3)
-		/*let gltf = await this.gltfLoader.loadAsync(
-			// resource URL
-			'assets/alien.gltf'
-		);
-		if(gltf){
-			gltf.scene.scale.set(1,1,1)
-			this.add( gltf.scene );
-		}*/
-		// const enemy = await this.createTarget(targetMtl)
-		// enemy.position.x = 0
-		// enemy.position.z = -3 
+		const enemyCube = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0000000, side:THREE.DoubleSide}), 0, -3, this.scene)
+
 		this.add(t1, t2, t3, t4, enemyCube)
 		this.targets.push(t1, t2, t3, t4)
 		this.enemies.push(enemyCube)
@@ -218,13 +208,12 @@ export default class BlasterScene extends THREE.Scene
 
 	public checkForTarget(){
 
-		var count = 0;
 		this.directions.forEach((direction) => {
 
 			//raycaster.set(ene)
 			this.raycaster.set(this.enemies[0].position, direction);
-			this.raycaster.near = 5
-			this.raycaster.far = 10
+			this.raycaster.near = 3
+			this.raycaster.far = 15
 
 			
 			
@@ -232,7 +221,12 @@ export default class BlasterScene extends THREE.Scene
 				const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
 				
 				if(intersects.length == 0){
-					this.enemies[0].inspect()
+					if (Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2)) >= this.raycaster.far){
+						this.enemies[0].inspect()
+					}
+					if (Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2)) <= this.raycaster.near){
+						this.enemies[0].shot()
+					}
 					return;
 				}
 			
