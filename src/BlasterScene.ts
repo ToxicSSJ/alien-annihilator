@@ -302,11 +302,12 @@ export default class BlasterScene extends THREE.Scene
 		t4.position.x = -300
 		t4.position.z = 200
 
-		const enemyCube = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0000000, side:THREE.DoubleSide}), 0, 20, this.scene)
+		const enemy1 = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0000000, side:THREE.DoubleSide}), 0, 20, this.scene)
+		const enemy2 = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0FFB6C1, side:THREE.DoubleSide}), -20, 100, this.scene)
 
-		this.add(t1, t2, t3, t4, enemyCube)
+		this.add(t1, t2, t3, t4, enemy1,enemy2)
 		this.targets.push(t1, t2, t3, t4)
-		this.enemies.push(enemyCube)
+		this.enemies.push(enemy1, enemy2)
 
 		this.blaster = await this.createBlaster()
 		this.add(this.blaster)
@@ -541,29 +542,32 @@ export default class BlasterScene extends THREE.Scene
 		this.directions.forEach((direction) => {
 
 			//raycaster.set(ene)
-			this.raycaster.set(this.enemies[0].position, direction);
-			this.raycaster.near = 0.5
-			this.raycaster.far = 20
-			
-			if (this.blaster){
-				const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
-				const distance = Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2))
-				if(intersects.length == 0){
-					if (distance >= this.raycaster.far){
-						this.enemies[0].inspect()
+			this.enemies.forEach((enemy)=>{
+				this.raycaster.set(enemy.position, direction);
+				this.raycaster.near = 5
+				this.raycaster.far = 20
+				
+				if (this.blaster){
+					const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
+					const distance = Math.sqrt(Math.pow(Math.abs(enemy.position.x - this.blaster.position.x),2)+Math.pow(Math.abs(enemy.position.z - this.blaster.position.z),2))
+					if(intersects.length == 0){
+						if (distance >= this.raycaster.far){
+							enemy.inspect()
+						}
+						if (distance <= this.raycaster.near){
+							this.prepareEnemyShot(this.enemies[0])
+							//this.game_lose = true
+						}
+						return;
 					}
-					if (distance <= this.raycaster.near){
-						//this.prepareEnemyShot(this.enemies[0])
-						this.game_lose = true
+				
+					if(intersects[0].object.name) {
+						enemy.move(direction)
 					}
-					return;
-				}
-			
-				if(intersects[0].object.name) {
-					this.enemies[0].move(direction)
-				}
 			}
 
+			})
+			
 		});
 		
 	}
