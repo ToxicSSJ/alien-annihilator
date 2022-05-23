@@ -7,7 +7,9 @@
     "preview": "vite preview"
   },
   "devDependencies": {
+    "@types/dat.gui": "^0.7.7",
     "@types/three": "^0.136.1",
+    "dat.gui": "^0.7.9",
     "typescript": "^4.4.4",
     "vite": "^2.7.2"
   },

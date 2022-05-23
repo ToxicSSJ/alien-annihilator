@@ -3,13 +3,20 @@ import * as THREE from 'three'
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
 
 import Bullet from './Bullet'
+import Enemy from './Enemy'
 
 export default class BlasterScene extends THREE.Scene
 {
+	private readonly gltfLoader = new GLTFLoader();
 	private readonly mtlLoader = new MTLLoader()
 	private readonly objLoader = new OBJLoader()
+
+	private readonly dracoLoader = new DRACOLoader();
+
+	private scene: THREE.Scene;
 
 	private readonly camera: THREE.PerspectiveCamera
 
@@ -22,10 +29,9 @@ export default class BlasterScene extends THREE.Scene
 
 	private bullets: Bullet[] = []
 	private targets: THREE.Group[] = []
-	private enemies: THREE.Mesh[] = []
+	private enemies: Enemy[] = []
 
 	private raycaster = new THREE.Raycaster()
-	private lag = 0.2
 	private directions: THREE.Vector3[] = []
 
 	private initialized: boolean = false;
@@ -34,6 +40,10 @@ export default class BlasterScene extends THREE.Scene
 	{
 		super()
 
+		this.dracoLoader.setDecoderPath('/examples/js/libs/draco/');
+		this.gltfLoader.setDRACOLoader(this.dracoLoader);
+
+		this.scene = this;
 		this.camera = camera
 	}
 
@@ -74,12 +84,23 @@ export default class BlasterScene extends THREE.Scene
 		t4.position.x = -2
 		t4.position.z = -3
 
-		//modification
-		const enemyCube = this.createCube()
-		enemyCube.position.set(0,0,-3)
-		//end of modification
-		this.loadAlien();
+		
 
+		// const enemyCube = this.createCube()
+		// enemyCube.position.set(0,0,-3)
+
+		const enemyCube = new Enemy(0, -3)
+		/*let gltf = await this.gltfLoader.loadAsync(
+			// resource URL
+			'assets/alien.gltf'
+		);
+		if(gltf){
+			gltf.scene.scale.set(1,1,1)
+			this.add( gltf.scene );
+		}*/
+		// const enemy = await this.createTarget(targetMtl)
+		// enemy.position.x = 0
+		// enemy.position.z = -3 
 		this.add(t1, t2, t3, t4, enemyCube)
 		this.targets.push(t1, t2, t3, t4)
 		this.enemies.push(enemyCube)
@@ -104,17 +125,6 @@ export default class BlasterScene extends THREE.Scene
 		this.initialized = true;
 	}
 
-	private loadAlien(){
-		const loader = new GLTFLoader()
-		loader.load('assets/alien.gltf', (gltf)=>{
-			gltf.scene.traverse(c => {
-				c.castShadow = true
-			})
-			gltf.scene.position.set(0,0,-3)
-			this.add(gltf.scene)
-		})
-	}
-
 	private handleKeyDown = (event: KeyboardEvent) => {
 		this.keyDown.add(event.key.toLowerCase())
 	}
@@ -129,8 +139,6 @@ export default class BlasterScene extends THREE.Scene
 	}
 
 	private animate(){
-		//if(this == undefined) // ?? por que mrdas es undefined
-		//	return;
 		this.checkForTarget();
 		requestAnimationFrame(() => this.animate);
 	}
@@ -208,39 +216,34 @@ export default class BlasterScene extends THREE.Scene
 		return modelRoot
 	}
 
-	//modification
-	private createCube()
-	{
-		return new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshPhongMaterial({ color: 0x333333 }))
-	}
-
 	public checkForTarget(){
 
+		var count = 0;
 		this.directions.forEach((direction) => {
 
 			//raycaster.set(ene)
 			this.raycaster.set(this.enemies[0].position, direction);
-			this.raycaster.near = 0
-			this.raycaster.far = 10000
+			this.raycaster.near = 5
+			this.raycaster.far = 10
+
+			
 			
 			if (this.blaster){
 				const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
 				
-				if(intersects.length == 0)
+				if(intersects.length == 0){
+					this.enemies[0].inspect()
 					return;
+				}
 			
 				if(intersects[0].object.name) {
-
-					this.enemies[0].position.x += (direction.x * this.lag);
-					this.enemies[0].position.z += (direction.z * this.lag);
-
+					this.enemies[0].move(direction)
 				}
 			}
 
 		});
 		
 	}
-	//end of modification
 
 	private async createBlaster()
 	{
@@ -339,11 +342,7 @@ export default class BlasterScene extends THREE.Scene
 						this.bullets.splice(i, 1)
 						i--
 
-						target.visible = false
-						target.position.set(0,0,-3)
-						setTimeout(() => {
-							target.visible = true
-						}, 3000)
+						target.receiveShot()
 					}
 				}
 			}
