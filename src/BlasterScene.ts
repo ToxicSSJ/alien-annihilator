@@ -14,6 +14,7 @@ import Door from './Door'
 import DoorEntity from './DoorEntity'
 import Winner from './Winner'
 import Enemy from './Enemy'
+import Entity from './Entity'
 
 export default class BlasterScene extends THREE.Scene
 {
@@ -161,6 +162,11 @@ export default class BlasterScene extends THREE.Scene
 		new WallOffset(0, 20, 90)
 	]
 
+	private enemies_positions: Array<Entity> = [
+		new Entity(0, 20),
+		new Entity(-20, 100)
+	]
+
 	private door_textures: string[] = [
 		"door_a"
 	]
@@ -221,6 +227,9 @@ export default class BlasterScene extends THREE.Scene
 
 		// wall
 		this.map()
+
+		// enemies
+		this.spawnEnemies()
 		
 		// let btn = document.createElement("button");
 		// btn.innerHTML = "Click Me";
@@ -302,12 +311,9 @@ export default class BlasterScene extends THREE.Scene
 		t4.position.x = -300
 		t4.position.z = 200
 
-		const enemy1 = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0000000, side:THREE.DoubleSide}), 0, 20, this.scene)
-		const enemy2 = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0FFB6C1, side:THREE.DoubleSide}), -20, 100, this.scene)
-
-		this.add(t1, t2, t3, t4, enemy1,enemy2)
+		this.add(t1, t2, t3, t4)
 		this.targets.push(t1, t2, t3, t4)
-		this.enemies.push(enemy1, enemy2)
+		
 
 		this.blaster = await this.createBlaster()
 		this.add(this.blaster)
@@ -327,6 +333,20 @@ export default class BlasterScene extends THREE.Scene
 		document.addEventListener('keyup', this.handleKeyUp)
 
 		this.initialized = true;
+	}
+
+	async spawnEnemies() {
+
+		for(let i = 0; i < this.enemies_positions.length; i++) {
+
+			let position = this.enemies_positions[i]
+			let enemy = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0000000, side:THREE.DoubleSide}), position.getX, position.getY, this.scene)
+
+			this.add(enemy)
+			this.enemies.push(enemy)
+
+		}
+		
 	}
 
 	async map() {
@@ -459,15 +479,11 @@ export default class BlasterScene extends THREE.Scene
 		}
 	}
 
-	private animate(){
+	private updateEnemies(){
 		//if(this == undefined) // ?? por que mrdas es undefined
 		//	return;
 		this.checkForTarget();
-		requestAnimationFrame(() => this.animate);
-	}
-
-	private updateEnemy(){
-		this.animate()
+		// requestAnimationFrame(() => this.updateEnemies);
 	}
 
 	private updateInput()
@@ -537,41 +553,8 @@ export default class BlasterScene extends THREE.Scene
 		return modelRoot
 	}
 
-	public checkForTarget(){
-
-		this.directions.forEach((direction) => {
-
-			//raycaster.set(ene)
-			this.enemies.forEach((enemy)=>{
-				this.raycaster.set(enemy.position, direction);
-				this.raycaster.near = 5
-				this.raycaster.far = 20
-				
-				if (this.blaster){
-					const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
-					const distance = Math.sqrt(Math.pow(Math.abs(enemy.position.x - this.blaster.position.x),2)+Math.pow(Math.abs(enemy.position.z - this.blaster.position.z),2))
-					if(intersects.length == 0){
-						if (distance >= this.raycaster.far){
-							enemy.inspect()
-						}
-						if (distance <= this.raycaster.near){
-							this.prepareEnemyShot(this.enemies[0])
-							//this.game_lose = true
-						}
-						return;
-					}
-				
-					if(intersects[0].object.name) {
-						enemy.move(direction)
-					}
-			}
-
-			})
-			
-		});
-		
-	}
 	private async prepareEnemyShot(enemy: Enemy){
+
 		if (!this.blaster) {
 			return
 		}
@@ -580,7 +563,7 @@ export default class BlasterScene extends THREE.Scene
 		const aabb = new THREE.Box3().setFromObject(enemy)
 		const size = aabb.getSize(new THREE.Vector3())
 
-		const vec = enemy.position
+		const vec = enemy.position.clone()
 		vec.y += 0.06
 
 		bulletModel.position.add(
@@ -598,6 +581,7 @@ export default class BlasterScene extends THREE.Scene
 			this.blaster.position.z * 0.2
 		)
 		this.bullets.push(b)
+
 	}
 
 	private async createBlaster()
@@ -788,6 +772,65 @@ export default class BlasterScene extends THREE.Scene
 
 	}
 
+	public checkForTarget() {
+
+		if (!this.blaster) return
+
+		enemy_loop : for(let j = 0; j < this.enemies.length; j++) {
+
+			let enemy = this.enemies[j]
+			if(enemy.isDead) continue
+
+			enemy.animate()
+
+			for(let i = 0; i < this.directions.length; i++) {
+
+				let direction = this.directions[i]
+
+				this.raycaster.set(enemy.position, direction);
+				this.raycaster.near = 5
+				this.raycaster.far = 20
+
+				// console.log(this.blaster.children)
+
+				const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
+				const distance = Math.sqrt(Math.pow(Math.abs(enemy.position.x - this.blaster.position.x), 2) + Math.pow(Math.abs(enemy.position.z - this.blaster.position.z), 2))
+
+				//console.log("DIR: " + direction.x + ", " + direction.z)
+				//console.log("L: " + intersects.length)
+				//console.log("D: " + distance)
+
+				if(intersects.length == 0) {
+
+					if (distance >= this.raycaster.far){
+						enemy.inspect()
+					}
+
+					if (distance <= this.raycaster.near){
+						// this.prepareEnemyShot(this.enemies[0])
+						//this.game_lose = true
+					}
+
+				} else {
+
+					if(intersects[0].object.name) {
+
+						enemy.move(direction)
+						console.log("xd")
+						continue enemy_loop
+
+					}
+
+				}
+			
+				
+
+			}
+
+		}
+		
+	}
+
 	private updateHUD() {
 
 		this.health(this.game_health)
@@ -888,7 +931,7 @@ export default class BlasterScene extends THREE.Scene
 		this.updateHUD()
 		this.updateInput()
 		this.updateBullets()
-		this.updateEnemy()
+		this.updateEnemies()
 		this.updateDoors()
 		this.updateWinners()
 

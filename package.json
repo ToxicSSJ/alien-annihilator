@@ -8,12 +8,14 @@
   },
   "devDependencies": {
     "@types/dat.gui": "^0.7.7",
+    "@types/gsap": "^3.0.0",
     "@types/three": "^0.136.1",
     "dat.gui": "^0.7.9",
     "typescript": "^4.4.4",
     "vite": "^2.7.2"
   },
   "dependencies": {
+    "gsap": "^3.10.4",
     "three": "^0.136.0"
   }
 }
