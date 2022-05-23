@@ -7,7 +7,6 @@ export default class Enemy extends THREE.Mesh
     private respawnX: number = 0
     private respawnZ: number = 0
     private lag = 0.009
-    private group3d = new THREE.Object3D()
     private scene = new THREE.Scene()
 
     //private appearance: Material
@@ -53,17 +52,18 @@ export default class Enemy extends THREE.Mesh
                 this.visible = true
                 this.respawn()
             }, 3000)
-            
+            return true
         }
         this.material = new THREE.MeshPhongMaterial({color: 0xFF0000})
         setTimeout(() => {
             this.material = new THREE.MeshPhongMaterial({color: 0x0000000})
         }, 100)
+        return false
     }
 
     public shot()
     {
-        
+        console.log("enemy fired")
     }
 
     public move(direction: THREE.Vector3){

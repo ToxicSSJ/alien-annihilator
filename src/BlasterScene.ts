@@ -179,6 +179,7 @@ export default class BlasterScene extends THREE.Scene
 
 	private game_doors: Array<DoorEntity> = []
 	private game_win: boolean = false
+	private game_lose: boolean = false
 
 	private game_skip: number = 0
 	private game_treeshold: number = 0.0005
@@ -286,20 +287,20 @@ export default class BlasterScene extends THREE.Scene
 
 		// create the 4 targets
 		const t1 = await this.createTarget(targetMtl)
-		t1.position.x = -1
+		t1.position.x = -7
 		t1.position.z = -3
 
 		const t2 = await this.createTarget(targetMtl)
-		t2.position.x = 1
-		t2.position.z = -3
+		t2.position.x = -20
+		t2.position.z = 50
 
 		const t3 = await this.createTarget(targetMtl)
-		t3.position.x = 2
-		t3.position.z = -3
+		t3.position.x = 19
+		t3.position.z = 120
 
 		const t4 = await this.createTarget(targetMtl)
-		t4.position.x = -2
-		t4.position.z = -3
+		t4.position.x = -300
+		t4.position.z = 200
 
 		const enemyCube = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0000000, side:THREE.DoubleSide}), 0, 20, this.scene)
 
@@ -535,30 +536,25 @@ export default class BlasterScene extends THREE.Scene
 		return modelRoot
 	}
 
-	//modification
-	private createCube()
-	{
-		return new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshPhongMaterial({ color: 0x333333 }))
-	}
-
 	public checkForTarget(){
 
 		this.directions.forEach((direction) => {
 
 			//raycaster.set(ene)
 			this.raycaster.set(this.enemies[0].position, direction);
-			this.raycaster.near = 5
-			this.raycaster.far = 12
+			this.raycaster.near = 0.5
+			this.raycaster.far = 20
 			
 			if (this.blaster){
 				const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
-				
+				const distance = Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2))
 				if(intersects.length == 0){
-					if (Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2)) >= this.raycaster.far){
+					if (distance >= this.raycaster.far){
 						this.enemies[0].inspect()
 					}
-					if (Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2)) <= this.raycaster.near){
-						this.enemies[0].shot()
+					if (distance <= this.raycaster.near){
+						//this.prepareEnemyShot(this.enemies[0])
+						this.game_lose = true
 					}
 					return;
 				}
@@ -571,7 +567,34 @@ export default class BlasterScene extends THREE.Scene
 		});
 		
 	}
-	//end of modification
+	private async prepareEnemyShot(enemy: Enemy){
+		if (!this.blaster) {
+			return
+		}
+		const bulletModel = await this.objLoader.loadAsync('assets/foamBulletB.obj')
+
+		const aabb = new THREE.Box3().setFromObject(enemy)
+		const size = aabb.getSize(new THREE.Vector3())
+
+		const vec = enemy.position
+		vec.y += 0.06
+
+		bulletModel.position.add(
+			vec.add(
+				enemy.position.clone().multiplyScalar(size.z * 0.5)
+			)
+		)
+
+		this.add(bulletModel)
+
+		const b = new Bullet(bulletModel)
+		b.setVelocity(
+			this.blaster.position.x * 0.2,
+			this.blaster.position.y * 0.2,
+			this.blaster.position.z * 0.2
+		)
+		this.bullets.push(b)
+	}
 
 	private async createBlaster()
 	{
@@ -665,6 +688,7 @@ export default class BlasterScene extends THREE.Scene
 					const target = this.targets[j]
 					if (target.position.distanceToSquared(b.group.position) < 0.05)
 					{
+						this.game_score += 10
 						this.remove(b.group)
 						this.bullets.splice(i, 1)
 						i--
@@ -683,12 +707,9 @@ export default class BlasterScene extends THREE.Scene
 						this.remove(b.group)
 						this.bullets.splice(i, 1)
 						i--
-
-						target.visible = false
-						target.position.set(0,0,-3)
-						setTimeout(() => {
-							target.visible = true
-						}, 3000)
+						if(target.receiveShot()){
+							this.game_score += 50
+						}
 					}
 				}
 			}
@@ -846,6 +867,14 @@ export default class BlasterScene extends THREE.Scene
 				this.updateWinners()
 
 			}
+
+			return
+
+		}
+
+		if(this.game_lose) {
+
+			this.looser()
 
 			return
 
