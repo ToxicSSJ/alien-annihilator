@@ -46,7 +46,7 @@ export default class Enemy extends THREE.Mesh
     }
 
     public receiveShot(){
-        const textureLoader = new THREE.TextureLoader()
+
         this.health -= 10
         if (this.health <= 0){
             this.visible = false

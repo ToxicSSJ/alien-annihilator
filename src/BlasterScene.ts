@@ -2,21 +2,21 @@ import * as THREE from 'three'
 
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader'
 import { MTLLoader } from 'three/examples/jsm/loaders/MTLLoader'
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader'
 import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader'
+import { GUI } from 'dat.gui'
 
 import Bullet from './Bullet'
-import Enemy from './Enemy'
+import Tile from './Tile'
 
 export default class BlasterScene extends THREE.Scene
 {
-	private readonly gltfLoader = new GLTFLoader();
+
 	private readonly mtlLoader = new MTLLoader()
 	private readonly objLoader = new OBJLoader()
+	private readonly gltfLoader = new GLTFLoader();
 
 	private readonly dracoLoader = new DRACOLoader();
-
-	private scene: THREE.Scene;
 
 	private readonly camera: THREE.PerspectiveCamera
 
@@ -29,12 +29,17 @@ export default class BlasterScene extends THREE.Scene
 
 	private bullets: Bullet[] = []
 	private targets: THREE.Group[] = []
-	private enemies: Enemy[] = []
+	private scene: THREE.Scene;
 
-	private raycaster = new THREE.Raycaster()
-	private directions: THREE.Vector3[] = []
+	private floors: Array<Tile> = [
+		new Tile(0, 0),
+		new Tile(0, 20)
+	]
 
-	private initialized: boolean = false;
+	private walls: Array<Tile> = [
+		new Tile(0, 0),
+		new Tile(0, 20)
+	]
 
 	constructor(camera: THREE.PerspectiveCamera)
 	{
@@ -45,11 +50,69 @@ export default class BlasterScene extends THREE.Scene
 
 		this.scene = this;
 		this.camera = camera
+
 	}
 
 	async initialize()
 	{
-		console.log("Executing intialize...")
+
+		// sprite
+		const map = new THREE.TextureLoader().load( 'sprite.png' );
+		const material2 = new THREE.SpriteMaterial( { map: map } );
+
+		const sprite = new THREE.Sprite( material2 );
+		this.camera.position.z = 2;
+		this.camera.add(sprite);
+
+		// wall
+		this.map()
+		
+		// let btn = document.createElement("button");
+		// btn.innerHTML = "Click Me";
+		// btn.style.cssText = 'position:absolute;top:2%;left:2%;width:200px;height:200px;';
+		//document.body.appendChild(btn);
+
+		// background
+		let materialArray = []
+
+		let texture_ft = new THREE.TextureLoader().load('assets/background/corona_ft.png');
+		let texture_bk = new THREE.TextureLoader().load('assets/background/corona_bk.png');
+		let texture_up = new THREE.TextureLoader().load('assets/background/corona_up.png');
+		let texture_dn = new THREE.TextureLoader().load('assets/background/corona_dn.png');
+		let texture_rt = new THREE.TextureLoader().load('assets/background/corona_rt.png');
+		let texture_lf = new THREE.TextureLoader().load('assets/background/corona_lf.png');
+
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_ft, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_bk, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_up, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_dn, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_rt, side: THREE.BackSide, fog: false }))
+		materialArray.push(new THREE.MeshBasicMaterial({ map: texture_lf, side: THREE.BackSide, fog: false }))
+
+		for(let i = 0; i < 6; i++) {
+			materialArray[i].side = THREE.BackSide;
+			materialArray[i].fog = false;
+		}
+
+		let skyboxGeo = new THREE.BoxGeometry(1000, 1000, 1000)
+		let skybox = new THREE.Mesh(skyboxGeo, materialArray)
+		this.add(skybox)
+
+		// Load a glTF resource
+		let gltf = await this.gltfLoader.loadAsync(
+			// resource URL
+			'assets/maps/design.gltf'
+		);
+
+		gltf.scene.scale.set(1,1,1) // scale here
+		//this.add( gltf.scene );
+
+		gltf.animations; // Array<THREE.AnimationClip>
+		gltf.scene; // THREE.Group
+		gltf.scenes; // Array<THREE.Group>
+		gltf.cameras; // Array<THREE.Camera>
+		gltf.asset; // Object
+
 
 		// load a shared MTL (Material Template Library) for the targets
 		const targetMtl = await this.mtlLoader.loadAsync('assets/targetA.mtl')
@@ -84,12 +147,11 @@ export default class BlasterScene extends THREE.Scene
 		t4.position.x = -2
 		t4.position.z = -3
 
-		
-
-		// const enemyCube = this.createCube()
-		// enemyCube.position.set(0,0,-3)
-
-		const enemyCube = new Enemy(new THREE.IcosahedronGeometry(1, 1), new THREE.MeshPhysicalMaterial({color:0x0000000, side:THREE.DoubleSide}), 0, -3, this.scene)
+		//modification
+		const enemyCube = this.createCube()
+		enemyCube.position.set(0,0,-3)
+		//end of modification
+		//this.loadAlien();
 
 		this.add(t1, t2, t3, t4, enemyCube)
 		this.targets.push(t1, t2, t3, t4)
@@ -112,7 +174,65 @@ export default class BlasterScene extends THREE.Scene
 		document.addEventListener('keydown', this.handleKeyDown)
 		document.addEventListener('keyup', this.handleKeyUp)
 
-		this.initialized = true;
+	}
+
+	async map() {
+
+		var floor_texture = new THREE.TextureLoader().load("assets/tiles/floor.jpg");
+		var wall_texture = new THREE.TextureLoader().load("assets/tiles/wall.jpg");
+
+		floor_texture.wrapS = THREE.RepeatWrapping;
+		floor_texture.wrapT = THREE.RepeatWrapping;
+		floor_texture.repeat.set( 4, 4 );
+
+		wall_texture.wrapS = THREE.RepeatWrapping;
+		wall_texture.wrapT = THREE.RepeatWrapping;
+		wall_texture.repeat.set( 4, 4 );
+
+		var material_floor = new THREE.MeshBasicMaterial({
+			color: 0xffffff,
+			map: floor_texture,
+		    side: THREE.DoubleSide
+		});
+
+		var material_wall = new THREE.MeshBasicMaterial({
+			color: 0xffffff,
+			map: wall_texture,
+		    side: THREE.DoubleSide
+		});
+
+		for(let i = 0; i < this.floors.length; i++) {
+
+			const floor = this.floors[i]
+
+			const geometry_in = new THREE.BoxGeometry(20, 0.1, 20);
+			const cube = new THREE.Mesh(geometry_in, material_floor);
+
+			cube.position.x = floor.getX;
+			cube.position.z = floor.getY;
+			cube.position.y = -2;
+
+			this.scene.add(cube);
+			console.log('lel')
+
+		}
+
+		for(let i = 0; i < this.walls.length; i++) {
+
+			const wall = this.walls[i]
+
+			const geometry_in = new THREE.BoxGeometry(0.1, 10, 20);
+			const cube = new THREE.Mesh(geometry_in, material_wall);
+
+			cube.position.x = wall.getX;
+			cube.position.z = wall.getY;
+			cube.position.y = 3;
+
+			this.scene.add(cube);
+			console.log('lel')
+
+		}
+
 	}
 
 	private handleKeyDown = (event: KeyboardEvent) => {
@@ -129,6 +249,8 @@ export default class BlasterScene extends THREE.Scene
 	}
 
 	private animate(){
+		//if(this == undefined) // ?? por que mrdas es undefined
+		//	return;
 		this.checkForTarget();
 		requestAnimationFrame(() => this.animate);
 	}
@@ -206,38 +328,39 @@ export default class BlasterScene extends THREE.Scene
 		return modelRoot
 	}
 
+	//modification
+	private createCube()
+	{
+		return new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshPhongMaterial({ color: 0x333333 }))
+	}
+
 	public checkForTarget(){
 
 		this.directions.forEach((direction) => {
 
 			//raycaster.set(ene)
 			this.raycaster.set(this.enemies[0].position, direction);
-			this.raycaster.near = 3
-			this.raycaster.far = 15
-
-			
+			this.raycaster.near = 0
+			this.raycaster.far = 10000
 			
 			if (this.blaster){
 				const intersects = this.raycaster.intersectObjects(this.blaster.children, false);
 				
-				if(intersects.length == 0){
-					if (Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2)) >= this.raycaster.far){
-						this.enemies[0].inspect()
-					}
-					if (Math.sqrt(Math.pow(Math.abs(this.enemies[0].position.x - this.blaster.position.x),2)+Math.pow(Math.abs(this.enemies[0].position.z - this.blaster.position.z),2)) <= this.raycaster.near){
-						this.enemies[0].shot()
-					}
+				if(intersects.length == 0)
 					return;
-				}
 			
 				if(intersects[0].object.name) {
-					this.enemies[0].move(direction)
+
+					this.enemies[0].position.x += (direction.x * this.lag);
+					this.enemies[0].position.z += (direction.z * this.lag);
+
 				}
 			}
 
 		});
 		
 	}
+	//end of modification
 
 	private async createBlaster()
 	{
@@ -336,7 +459,11 @@ export default class BlasterScene extends THREE.Scene
 						this.bullets.splice(i, 1)
 						i--
 
-						target.receiveShot()
+						target.visible = false
+						target.position.set(0,0,-3)
+						setTimeout(() => {
+							target.visible = true
+						}, 3000)
 					}
 				}
 			}
