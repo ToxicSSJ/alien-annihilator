@@ -30,6 +30,20 @@ strong {
 
 }
 
+.game-damage {
+    
+    background-color: rgba(255, 1, 1, .5);
+    position: absolute;
+
+    height: 100%;
+    width: 100%;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+
 .game_ad {
 
     background-color: rgba(1, 1, 1, .5);

@@ -16,6 +16,7 @@ export default class Enemy extends THREE.Mesh
     private lag = 0.05
     private numRot = 0.02
     private dead = false
+    private shoot: number = 0
 
     constructor(geometry:IcosahedronGeometry, material:MeshPhysicalMaterial,iniX:number, iniZ: number, scene: THREE.Scene) {
         //const textureLoader = new THREE.TextureLoader()
@@ -76,9 +77,11 @@ export default class Enemy extends THREE.Mesh
 
         this.health -= 10
         if (this.health <= 0){
+            this.dead = true
             this.visible = false
             setTimeout(() => {
                 this.visible = true
+                this.dead = false
                 this.respawn()
             }, 3000)
             return true
@@ -123,6 +126,18 @@ export default class Enemy extends THREE.Mesh
 
     get isDead() {
         return this.dead
+    }
+
+    get getShoot() {
+        return this.shoot
+    }
+
+    get getHealth() {
+        return this.health
+    }
+
+    setShoot(shoot: number) {
+        this.shoot = shoot
     }
 
 }

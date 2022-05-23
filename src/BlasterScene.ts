@@ -15,6 +15,7 @@ import DoorEntity from './DoorEntity'
 import Winner from './Winner'
 import Enemy from './Enemy'
 import Entity from './Entity'
+import EnemyBullet from './EnemyBullet'
 
 export default class BlasterScene extends THREE.Scene
 {
@@ -34,6 +35,7 @@ export default class BlasterScene extends THREE.Scene
 	private directionVector = new THREE.Vector3()
 
 	private bullets: Bullet[] = []
+	private enemy_bullets: EnemyBullet[] = []
 	private targets: THREE.Group[] = []
 	private enemies: Enemy[] = []
 
@@ -163,8 +165,17 @@ export default class BlasterScene extends THREE.Scene
 	]
 
 	private enemies_positions: Array<Entity> = [
-		new Entity(0, 20),
-		new Entity(-20, 100)
+		// new Entity(0, 20),
+		new Entity(0, 120),
+		new Entity(0, 160),
+		new Entity(20, 220),
+		new Entity(-20, 220),
+
+		new Entity(0, 120 + 200),
+		new Entity(0, 160 + 200),
+		new Entity(20, 220 + 200),
+		new Entity(-20, 220 + 200),
+
 	]
 
 	private door_textures: string[] = [
@@ -187,6 +198,7 @@ export default class BlasterScene extends THREE.Scene
 	private game_win: boolean = false
 	private game_lose: boolean = false
 
+	private game_shoot_skip: number = 0
 	private game_skip: number = 0
 	private game_treeshold: number = 0.0005
 
@@ -311,7 +323,7 @@ export default class BlasterScene extends THREE.Scene
 		t4.position.x = -300
 		t4.position.z = 200
 
-		this.add(t1, t2, t3, t4)
+		//this.add(t1, t2, t3, t4)
 		this.targets.push(t1, t2, t3, t4)
 		
 
@@ -555,32 +567,64 @@ export default class BlasterScene extends THREE.Scene
 
 	private async prepareEnemyShot(enemy: Enemy){
 
-		if (!this.blaster) {
+		if (!this.blaster) return
+		if(enemy.isDead) return
+		if(this.game_win || this.game_lose) return
+
+		if(this.game_shoot_skip++ < 1000) {
 			return
 		}
-		const bulletModel = await this.objLoader.loadAsync('assets/foamBulletB.obj')
 
-		const aabb = new THREE.Box3().setFromObject(enemy)
-		const size = aabb.getSize(new THREE.Vector3())
+		this.game_shoot_skip = 0
 
-		const vec = enemy.position.clone()
-		vec.y += 0.06
+		let shoot = enemy.getShoot
+		let current = Date.now()
 
-		bulletModel.position.add(
-			vec.add(
-				enemy.position.clone().multiplyScalar(size.z * 0.5)
+		if(current > shoot) {
+
+			enemy.setShoot(current + (1000 * 2));
+
+			//const bulletModel = await this.objLoader.loadAsync('assets/foamBulletB.obj')
+			const geometry  = new THREE.SphereGeometry( 0.05, 0.05, 0.05 );
+			const material = new THREE.MeshBasicMaterial( { color: '#'+(0x1000000+Math.random()*0xffffff).toString(16).substr(1,6) } );
+			const bulletModel = new THREE.Mesh( geometry, material );
+
+			const aabb = new THREE.Box3().setFromObject(enemy)
+			const size = aabb.getSize(new THREE.Vector3())
+
+			const dir = new THREE.Vector3().subVectors(this.blaster.position, enemy.position).normalize()
+			const vec = enemy.position.clone()
+			vec.y += 0.06
+
+			bulletModel.position.add(
+				vec.add(
+					dir.clone().multiplyScalar(size.z * 0.5)
+				)
 			)
-		)
 
-		this.add(bulletModel)
+			bulletModel.scale.set(5, 5, 5)
 
-		const b = new Bullet(bulletModel)
-		b.setVelocity(
-			this.blaster.position.x * 0.2,
-			this.blaster.position.y * 0.2,
-			this.blaster.position.z * 0.2
-		)
-		this.bullets.push(b)
+			// rotate children to match gun for simplicity
+			bulletModel.children.forEach(child => child.rotateX(Math.PI * -0.5))
+
+			// use the same rotation as as the gun
+			bulletModel.rotation.copy(this.blaster.rotation)
+
+			this.add(bulletModel)
+
+			const b = new EnemyBullet(bulletModel)
+			b.setVelocity(
+				dir.x * 0.2,
+				dir.y * 0.2,
+				dir.z * 0.2
+			)
+
+			this.enemy_bullets.push(b)
+			this.playSound("assets/sound/shoot.mp3", 0.05)
+
+			console.log("shooting!")
+
+		}
 
 	}
 
@@ -681,6 +725,7 @@ export default class BlasterScene extends THREE.Scene
 						this.bullets.splice(i, 1)
 						i--
 
+						
 						target.visible = false
 						setTimeout(() => {
 							target.visible = true
@@ -695,10 +740,61 @@ export default class BlasterScene extends THREE.Scene
 						this.remove(b.group)
 						this.bullets.splice(i, 1)
 						i--
+						if(target.getHealth - 10 <= 0 && !target.isDead) this.playSound("assets/sound/kill.mp3", 1)
 						if(target.receiveShot()){
 							this.game_score += 50
 						}
+						console.log(target.getHealth)
+						
 					}
+				}
+			}
+		}
+	}
+
+	private updateEnemyBullets()
+	{
+		
+		if(!this.blaster) return
+		if(this.game_lose || this.game_win) return
+
+		for (let i = 0; i < this.enemy_bullets.length; ++i)
+		{
+			const b = this.enemy_bullets[i]
+			b.update()
+
+			if (b.shouldRemove)
+			{
+				this.remove(b.group)
+				this.enemy_bullets.splice(i, 1)
+				i--
+			}
+			else
+			{
+				let target = this.blaster
+				if (target.position.distanceToSquared(b.group.position) < 0.05)
+				{
+					this.game_health -= 10
+					this.remove(b.group)
+					this.enemy_bullets.splice(i, 1)
+					i--
+
+					this.playSound("assets/sound/damage.mp3", 0.12)
+					target.visible = false
+					this.damage(false)
+					setTimeout(() => {
+						target.visible = true
+						this.damage(true)
+					}, 100)
+
+					if(this.game_health <= 0) {
+
+						this.looser()
+						this.game_lose = true
+						return
+
+					}
+
 				}
 			}
 		}
@@ -775,6 +871,7 @@ export default class BlasterScene extends THREE.Scene
 	public checkForTarget() {
 
 		if (!this.blaster) return
+		if(this.game_win || this.game_lose) return
 
 		enemy_loop : for(let j = 0; j < this.enemies.length; j++) {
 
@@ -788,8 +885,8 @@ export default class BlasterScene extends THREE.Scene
 				let direction = this.directions[i]
 
 				this.raycaster.set(enemy.position, direction);
-				this.raycaster.near = 5
-				this.raycaster.far = 20
+				this.raycaster.near = 20
+				this.raycaster.far = 60
 
 				// console.log(this.blaster.children)
 
@@ -807,7 +904,7 @@ export default class BlasterScene extends THREE.Scene
 					}
 
 					if (distance <= this.raycaster.near){
-						// this.prepareEnemyShot(this.enemies[0])
+						this.prepareEnemyShot(enemy)
 						//this.game_lose = true
 					}
 
@@ -816,7 +913,6 @@ export default class BlasterScene extends THREE.Scene
 					if(intersects[0].object.name) {
 
 						enemy.move(direction)
-						console.log("xd")
 						continue enemy_loop
 
 					}
@@ -895,6 +991,11 @@ export default class BlasterScene extends THREE.Scene
 		if(looser2) looser2.style.visibility = 'visible'
 	}
 
+	public damage(hidden: boolean) {
+		let element = document.getElementById('damage1')
+		if(element) element.style.visibility = (hidden ? 'hidden' : 'visible')
+	}
+
 	update()
 	{
 		if(!this.initialized)
@@ -910,6 +1011,7 @@ export default class BlasterScene extends THREE.Scene
 				this.updateHUD()
 				this.updateInput()
 				this.updateBullets()
+				this.updateEnemyBullets()
 				this.updateDoors()
 				this.updateWinners()
 
@@ -932,6 +1034,7 @@ export default class BlasterScene extends THREE.Scene
 		this.updateInput()
 		this.updateBullets()
 		this.updateEnemies()
+		this.updateEnemyBullets()
 		this.updateDoors()
 		this.updateWinners()
 
