@@ -35,8 +35,7 @@ export default class Enemy extends THREE.Mesh
         //const textureLoader = new THREE.TextureLoader()
         super(geometry, material)
         this.scale.set(0.3, 0.3, 0.3)
-        this.position.set(0, 0, -3)
-        this.group3d.position.set(iniX, 0, iniZ)
+        this.position.set(iniX, 0, iniZ)
 
         this.scene = scene
 
