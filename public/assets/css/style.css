@@ -19,6 +19,14 @@ strong {
     color: white;
 }
 
+.game-hud {
+    padding-left: 5% !important;
+    padding-top: 5% !important;
+    padding-bottom: 5% !important;
+    padding-right: 5% !important;
+    background-color: rgba(1, 1, 1, .5);
+}
+
 .top-left {
 
     position: absolute;

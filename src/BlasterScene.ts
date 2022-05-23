@@ -8,6 +8,10 @@ import { GUI } from 'dat.gui'
 
 import Bullet from './Bullet'
 import Tile from './Tile'
+import WallOffset from './WallOffset'
+import { Audio, Material } from 'three'
+import Door from './Door'
+import DoorEntity from './DoorEntity'
 
 export default class BlasterScene extends THREE.Scene
 {
@@ -17,10 +21,8 @@ export default class BlasterScene extends THREE.Scene
 	private readonly gltfLoader = new GLTFLoader();
 
 	private readonly dracoLoader = new DRACOLoader();
-	
-
+	private readonly soundListener = new THREE.AudioListener();
 	private readonly camera: THREE.PerspectiveCamera
-
 	private readonly keyDown = new Set<string>()
 
 	private blaster?: THREE.Group
@@ -32,15 +34,59 @@ export default class BlasterScene extends THREE.Scene
 	private targets: THREE.Group[] = []
 	private scene: THREE.Scene;
 
+	private sound: Audio;
+	private music: Audio;
+
+	private textures: Map<string, Material> = new Map<string, Material>(); 
+
 	private floors: Array<Tile> = [
-		new Tile(0, 0),
-		new Tile(0, 20)
+
+		new Tile(0, 0, 2, [0, 0, 0, -1], 1),
+		new Tile(0, 20, 2, [-1, -1, -1, 0], 1),
+
+		new Tile(20, 20, 2, [0, 0, -1, -1], 1),
+		new Tile(-20, 20, 2, [0, -1, 0, -1], 1),
+		
+		new Tile(20, 40, 2, [-1, 0, 0, -1], 1),
+		new Tile(20, 60, 2, [-1, 0, -1, 0], 1),
+
+		new Tile(0, 60, 2, [0, -1, -1, -1], 1),
+		new Tile(-20, 40, 2, [-1, 0, 0, -1], 1),
+		new Tile(0, 80, 2, [-1, 0, 0, -1], 1),
+		new Tile(-20, 60, 2, [-1, -1, 0, 0], 1),
+
+		new Tile(0, 100, 2, [-1, -1, -1, -1], -1),
+		
 	]
 
-	private walls: Array<Tile> = [
-		new Tile(0, 0),
-		new Tile(0, 20)
+	private doors: Array<Door> = [
+		new Door(0, 90, 15, 0)
 	]
+
+	private walls: Array<WallOffset> = [
+		new WallOffset(0, 0, 90),
+		new WallOffset(10, 10, 0),
+		new WallOffset(-10, 10, 0),
+		new WallOffset(0, 20, 90)
+	]
+
+	private door_textures: string[] = [
+		"door_a"
+	]
+
+	private roof_textures: string[] = [
+		"roof_a", "roof_b"
+	]
+
+	private floor_textures: string[] = [
+		"floor_a", "floor_b", "floor_c"
+	]
+
+	private wall_textures: string[] = [
+		"wall_a", "wall_b", "wall_c"
+	]
+
+	private game_doors: Array<DoorEntity> = []
 
 	constructor(camera: THREE.PerspectiveCamera)
 	{
@@ -52,10 +98,18 @@ export default class BlasterScene extends THREE.Scene
 		this.scene = this;
 		this.camera = camera
 
+		this.camera.add(this.soundListener)
+
+		this.sound = new THREE.Audio(this.soundListener)
+		this.music = new THREE.Audio(this.soundListener)
+
 	}
 
 	async initialize()
 	{
+
+		// music
+		this.playMusic("assets/sound/music.mp3", this.music)
 
 		// sprite
 		const map = new THREE.TextureLoader().load( 'sprite.png' );
@@ -163,58 +217,116 @@ export default class BlasterScene extends THREE.Scene
 
 	async map() {
 
-		var floor_texture = new THREE.TextureLoader().load("public/assets/tiles/floor.jpg");
-		var wall_texture = new THREE.TextureLoader().load("public/assets/tiles/wall.jpg");
-
-		floor_texture.wrapS = THREE.RepeatWrapping;
-		floor_texture.wrapT = THREE.RepeatWrapping;
-		floor_texture.repeat.set( 4, 4 );
-
-		wall_texture.wrapS = THREE.RepeatWrapping;
-		wall_texture.wrapT = THREE.RepeatWrapping;
-		wall_texture.repeat.set( 4, 4 );
-
-		var material_floor = new THREE.MeshBasicMaterial({
-			color: 0xffffff,
-			map: floor_texture,
-		    side: THREE.DoubleSide
-		});
-
-		var material_wall = new THREE.MeshBasicMaterial({
-			color: 0xffffff,
-			map: wall_texture,
-		    side: THREE.DoubleSide
-		});
+		this.loadMapTextures();
 
 		for(let i = 0; i < this.floors.length; i++) {
 
 			const floor = this.floors[i]
 
 			const geometry_in = new THREE.BoxGeometry(20, 0.1, 20);
-			const cube = new THREE.Mesh(geometry_in, material_floor);
+			const floor_cube = new THREE.Mesh(geometry_in, this.textures.get(this.floor_textures[floor.getTexture]));
 
-			cube.position.x = floor.getX;
-			cube.position.z = floor.getY;
-			cube.position.y = -2;
+			floor_cube.position.x = floor.getX;
+			floor_cube.position.z = floor.getY;
+			floor_cube.position.y = -2;
 
-			this.scene.add(cube);
-			console.log('lel')
+			this.scene.add(floor_cube);
+
+			for(let j = 0; j < floor.getWalls.length; j++) {
+
+				let value = floor.getWalls[j]
+
+				if(value < 0)
+					continue
+
+				let offset = this.walls[j]
+
+				const geometry_in = new THREE.BoxGeometry(0.1, 10, 20);
+				const wall_cube = new THREE.Mesh(geometry_in, this.textures.get(this.wall_textures[value]));
+	
+				wall_cube.position.x = floor_cube.position.x + offset.getX + 0;
+				wall_cube.position.z = floor_cube.position.z + offset.getY + -10;
+				wall_cube.position.y = 3;
+	
+				wall_cube.rotateY(this.radian(offset.getR));
+				this.scene.add(wall_cube);
+
+			}
+
+			let roof_value = floor.getRoof
+
+			if(roof_value >= 0) {
+
+				const geometry_in = new THREE.BoxGeometry(20, 0.1, 20);
+				const material = this.textures.get(this.roof_textures[roof_value])
+
+				if(material == undefined) continue
+
+				let new_material = material?.clone()
+				new_material.opacity = 0.1
+				new_material.transparent =  true
+
+				const roof_cube = new THREE.Mesh(geometry_in, new_material);
+	
+				roof_cube.position.x = floor_cube.position.x;
+				roof_cube.position.z = floor_cube.position.z;
+				roof_cube.position.y = 8;
+
+				this.scene.add(roof_cube);
+
+			}
+				
 
 		}
 
-		for(let i = 0; i < this.walls.length; i++) {
+		for(let i = 0; i < this.doors.length; i++) {
 
-			const wall = this.walls[i]
+			const door = this.doors[i]
+			let offset = this.walls[i]
 
 			const geometry_in = new THREE.BoxGeometry(0.1, 10, 20);
-			const cube = new THREE.Mesh(geometry_in, material_wall);
+			const door_cube = new THREE.Mesh(geometry_in, this.textures.get(this.door_textures[door.getTexture]));
 
-			cube.position.x = wall.getX;
-			cube.position.z = wall.getY;
-			cube.position.y = 3;
+			door_cube.position.x = door.getX + offset.getX + 0;
+			door_cube.position.z = door.getY + offset.getY + -10;
+			door_cube.position.y = 3;
 
-			this.scene.add(cube);
-			console.log('lel')
+			door_cube.rotateY(this.radian(offset.getR));
+
+			this.scene.add(door_cube);
+			this.game_doors.push(new DoorEntity(door, door_cube, 0, false, false))
+
+		}
+
+	}
+
+	async loadMapTextures() {
+
+		this.loadTextures(this.floor_textures)
+		this.loadTextures(this.wall_textures)
+		this.loadTextures(this.roof_textures)
+		this.loadTextures(this.door_textures)
+
+	}
+
+	async loadTextures(textures: string[]) {
+
+		for(let i = 0; i < textures.length; i++) {
+
+			var texture_name = textures[i]
+			var texture = new THREE.TextureLoader().load("assets/tiles/" + texture_name + ".jpg");
+
+			texture.wrapS = THREE.RepeatWrapping;
+			texture.wrapT = THREE.RepeatWrapping;
+			texture.repeat.set(1, 1);
+
+			var material = new THREE.MeshBasicMaterial({
+				color: 0xffffff,
+				map: texture,
+				side: THREE.DoubleSide
+			});
+
+			this.textures.set(texture_name, material)
 
 		}
 
@@ -310,8 +422,8 @@ export default class BlasterScene extends THREE.Scene
 		this.objLoader.setMaterials(mtl)
 
 		const modelRoot = await this.objLoader.loadAsync('assets/blasterG.obj')
-
 		return modelRoot
+
 	}
 
 	private async createBullet()
@@ -358,6 +470,12 @@ export default class BlasterScene extends THREE.Scene
 		)
 
 		this.bullets.push(b)
+		this.playSound("assets/sound/shoot.mp3", this.sound, 0.05)
+
+	}
+
+	private radian(deg: number) {
+		return (deg * Math.PI) / 180.0;
 	}
 
 	private updateBullets()
@@ -394,10 +512,75 @@ export default class BlasterScene extends THREE.Scene
 		}
 	}
 
+	private updateDoors() {
+
+		if(!this.blaster) return
+
+		for (let i = 0; i < this.game_doors.length; ++i) {
+
+			const entity = this.game_doors[i]
+			if(entity.getCompleted) continue
+
+			let mesh = entity.getMesh
+
+			if(entity.getActivated) {
+
+				if(mesh.position.y > -15) {
+
+					mesh.position.y = mesh.position.y -= 0.075
+					continue
+
+				}
+
+				entity.setCompleted(true)
+				continue
+
+			}
+
+			const door_pos = entity.getMesh.position.clone()
+			const player_pos = this.blaster.position.clone()
+
+			let distance = door_pos.distanceTo(player_pos)
+
+			if(distance <= entity.getDoor.getDistance) {
+
+				entity.setActivated(true)
+				this.playSound("assets/sound/door.mp3", this.sound, 0.5)
+				continue
+
+			}
+
+		}
+
+	}
+
+	private playSound(soundName: string, player: Audio, volume: number) {
+		let sound = new THREE.Audio(this.soundListener)
+		const audioLoader = new THREE.AudioLoader();
+		audioLoader.load(soundName, function( buffer ) {
+			sound.setBuffer(buffer);
+			sound.setLoop(false);
+			sound.setVolume(volume);
+			sound.play();
+		});
+	}
+
+	private playMusic(soundName: string, player: Audio) {
+		const audioLoader = new THREE.AudioLoader();
+		let sound = player
+		audioLoader.load(soundName, function( buffer ) {
+			sound.setBuffer(buffer);
+			sound.setLoop(true);
+			sound.setVolume(0.2);
+			sound.play();
+		});
+	}
+
 	update()
 	{
 		// update
 		this.updateInput()
 		this.updateBullets()
+		this.updateDoors()
 	}
 }

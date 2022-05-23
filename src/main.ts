@@ -10,7 +10,6 @@ const renderer = new THREE.WebGLRenderer({
 renderer.setSize(width, height)
 
 const mainCamera = new THREE.PerspectiveCamera(60, width / height, 0.1, 1000)
-
 const scene = new BlasterScene(mainCamera)
 
 scene.initialize()
