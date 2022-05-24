@@ -885,7 +885,7 @@ export default class BlasterScene extends THREE.Scene
 				let direction = this.directions[i]
 
 				this.raycaster.set(enemy.position, direction);
-				this.raycaster.near = 20
+				this.raycaster.near = 5
 				this.raycaster.far = 60
 
 				// console.log(this.blaster.children)
